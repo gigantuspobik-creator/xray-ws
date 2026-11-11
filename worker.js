@@ -14,7 +14,7 @@ function toBytes(data) {
 }
 
 export default {
-	async fetch(request) {
+	async fetch(request, env, ctx) {  // <-- Важно: добавлен ctx
 		if ((request.headers.get("Upgrade") || "").toLowerCase() !== "websocket") {
 			return new Response("Expected websocket", { status: 426 });
 		}
@@ -53,7 +53,8 @@ export default {
 			} catch {}
 		});
 
-		(async () => {
+		// КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: оборачиваем цикл в ctx.waitUntil
+		ctx.waitUntil((async () => {
 			try {
 				while (true) {
 					const { value, done } = await tcpReader.read();
@@ -76,7 +77,7 @@ export default {
 					socket.close();
 				} catch {}
 			}
-		})();
+		})());
 
 		return new Response(null, { status: 101, webSocket: client });
 	},
